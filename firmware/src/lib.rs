@@ -8,6 +8,8 @@ use embassy_stm32::Config;
 // global logger
 use panic_probe as _;
 
+pub mod net;
+
 pub use defmt::*;
 
 use core::sync::atomic::{AtomicUsize, Ordering};

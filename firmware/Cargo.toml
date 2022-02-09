@@ -17,6 +17,8 @@ nb = "1.0.0"
 rand_core = "0.6.3"
 critical-section = "0.2.3"
 
+format = { path = "../format",  features = ["defmt"] }
+
 [dependencies.embassy]
 git = "https://github.com/embassy-rs/embassy.git"
 branch = "master"

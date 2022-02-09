@@ -480,6 +480,7 @@ dependencies = [
  "embassy-net",
  "embassy-stm32",
  "embedded-hal",
+ "format",
  "futures",
  "heapless",
  "nb 1.0.0",
@@ -498,6 +499,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 name = "format"
 version = "0.1.0"
 dependencies = [
+ "defmt",
  "heapless",
  "postcard",
  "serde",
