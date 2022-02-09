@@ -1,0 +1,40 @@
+[package]
+name = "firmware"
+edition = "2021"
+version = "0.1.0"
+
+[dependencies]
+defmt = "0.3"
+defmt-rtt = "0.3"
+
+cortex-m = "0.7.3"
+cortex-m-rt = "0.7.0"
+embedded-hal = "0.2.6"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+futures = { version = "0.3.17", default-features = false, features = ["async-await"] }
+heapless = { version = "0.7.5", default-features = false }
+nb = "1.0.0"
+rand_core = "0.6.3"
+critical-section = "0.2.3"
+
+[dependencies.embassy]
+git = "https://github.com/embassy-rs/embassy.git"
+branch = "master"
+features = ["defmt"]
+
+[dependencies.embassy-stm32]
+version = "0.1.0"
+git = "https://github.com/embassy-rs/embassy.git"
+branch = "master"
+features = ["defmt", "net", "stm32f767zi", "unstable-pac", "time-driver-any", "exti"]
+
+[dependencies.embassy-net]
+git = "https://github.com/embassy-rs/embassy.git"
+branch = "master"
+default-features = false
+features = ["defmt", "tcp", "medium-ethernet", "pool-16", "dhcpv4"]
+
+[dependencies.smoltcp]
+version = "0.8.0"
+default-features = false
+features = ["defmt"]

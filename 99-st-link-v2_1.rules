@@ -1,0 +1,2 @@
+# STMicroelectronics ST-LINK/V2.1
+ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", MODE:="0666"
