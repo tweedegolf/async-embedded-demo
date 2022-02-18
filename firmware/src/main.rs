@@ -107,7 +107,7 @@ fn main() -> ! {
     }
 
     let eth_int = interrupt::take!(ETH);
-    let mac_addr = [0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
+    let mac_addr = get_mac_addr();
     let state = STATE.put(State::new());
 
     let eth = unsafe {
@@ -118,12 +118,19 @@ fn main() -> ! {
     };
 
     #[cfg(not(feature = "dhcp"))]
-    let config = Configurator::new(NetConfig {
-        // You may want to configure another IP address if this one is already taken
-        address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 0, 2), 24),
-        dns_servers: heapless::Vec::new(),
-        gateway: None,
-    });
+    let config = {
+        let ip_addr = env!(
+            "DEVICE_IP",
+            "Please set the DEVICE_IP env var to the desired device IP address"
+        )
+        .parse()
+        .expect("Could not parse IP address");
+        Configurator::new(NetConfig {
+            address: Ipv4Cidr::new(ip_addr, 24),
+            dns_servers: heapless::Vec::new(),
+            gateway: None,
+        })
+    };
 
     #[cfg(feature = "dhcp")]
     let config = Configurator::new();
@@ -135,4 +142,17 @@ fn main() -> ! {
     executor.run(move |spawner| {
         unwrap!(spawner.spawn(main_task(eth, config, spawner)));
     })
+}
+
+/// Generates a MAC address based on the device's unique ID
+fn get_mac_addr() -> [u8; 6] {
+    // Note (unsafe): 0x1FF0F420 is the device Unique ID address, from which we can safely read
+    let uniqid: [u8; 12] = unsafe { core::ptr::read_volatile(0x1FF0F420 as *const [u8; 12]) };
+    defmt::debug!("Device unique id: {=[u8;12]:#04X}", uniqid);
+    let mut mac_addr = [0x02u8; 6];
+    for i in 0..5 {
+        mac_addr[i + 1] = uniqid[2 * i] ^ uniqid[2 * i + 1];
+    }
+    defmt::debug!("Mac address: {=[u8;6]:#04X}", mac_addr);
+    mac_addr
 }
