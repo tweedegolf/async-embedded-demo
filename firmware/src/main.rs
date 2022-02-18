@@ -11,9 +11,13 @@ use embassy::executor::{Executor, Spawner};
 use embassy::io::AsyncWriteExt;
 use embassy::time::{Duration, Timer};
 use embassy::util::Forever;
-use embassy_net::{
-    Ipv4Address, StackResources, DhcpConfigurator, TcpSocket,
-};
+use embassy_net::{Ipv4Address, StackResources, TcpSocket};
+
+#[cfg(feature = "dhcp")]
+use embassy_net::DhcpConfigurator as Configurator;
+#[cfg(not(feature = "dhcp"))]
+use embassy_net::{Config as NetConfig, Ipv4Cidr, StaticConfigurator as Configurator};
+
 use embassy_stm32::eth::lan8742a::LAN8742A;
 use embassy_stm32::eth::{Ethernet, State};
 use embassy_stm32::rng::Rng;
@@ -25,7 +29,7 @@ use peripherals::RNG;
 #[embassy::task]
 async fn main_task(
     device: &'static mut Ethernet<'static, LAN8742A, 4, 4>,
-    config: &'static mut DhcpConfigurator,
+    config: &'static mut Configurator,
     spawner: Spawner,
 ) {
     let net_resources = NET_RESOURCES.put(StackResources::new());
@@ -45,18 +49,19 @@ async fn main_task(
 
     socket.set_timeout(Some(embassy_net::SmolDuration::from_secs(10)));
 
-    
-    let ip_addr: Ipv4Address = unwrap!(include_str!("../../target/PUBLIC_IP_ADDR").parse());
-    let port: u16 = include_str!("../../target/PUBLIC_PORT").parse().unwrap();
+    let ip_addr: Ipv4Address = unwrap!(include_str!("../../target/HOST_IP_ADDR").parse());
+    let port: u16 = include_str!("../../target/HOST_PORT").parse().unwrap();
+
+    info!("Connecting to {}:{}...", &ip_addr, &port);
     let remote_endpoint = (ip_addr, port);
-    info!("Connecting...");
     let r = socket.connect(remote_endpoint).await;
     if let Err(e) = r {
         info!("connect error: {:?}", e);
         return;
     }
-    info!("connected!");
+    info!("Connected!");
     loop {
+        info!("Sending message");
         let r = socket.write_all(b"Hello\n").await;
         if let Err(e) = r {
             info!("write error: {:?}", e);
@@ -85,7 +90,7 @@ static mut RNG_INST: Option<Rng<RNG>> = None;
 static EXECUTOR: Forever<Executor> = Forever::new();
 static STATE: Forever<State<'static, 4, 4>> = Forever::new();
 static ETH: Forever<Ethernet<'static, LAN8742A, 4, 4>> = Forever::new();
-static CONFIG: Forever<DhcpConfigurator> = Forever::new();
+static CONFIG: Forever<Configurator> = Forever::new();
 static NET_RESOURCES: Forever<StackResources<1, 2, 8>> = Forever::new();
 
 #[entry]
@@ -112,12 +117,16 @@ fn main() -> ! {
         ))
     };
 
-    // let config = StaticConfigurator::new(NetConfig {
-    //     address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 30, 40), 24),
-    //     dns_servers: Vec::new(),
-    //     gateway: Some(Ipv4Address::new(192, 168, 30, 1)),
-    // });
-    let config = DhcpConfigurator::new();
+    #[cfg(not(feature = "dhcp"))]
+    let config = Configurator::new(NetConfig {
+        // You may want to configure another IP address if this one is already taken
+        address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 0, 2), 24),
+        dns_servers: heapless::Vec::new(),
+        gateway: None,
+    });
+
+    #[cfg(feature = "dhcp")]
+    let config = Configurator::new();
 
     let config = CONFIG.put(config);
 
