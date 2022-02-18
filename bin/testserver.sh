@@ -2,7 +2,7 @@
 set -eo pipefail
 
 # Default options
-SERVER_PORT=8088
+LOCAL_PORT=8088
 SERVER_IP_ADDR=192.168.0.1
 ENABLE_NGROK=0
 
@@ -20,13 +20,14 @@ while [ -n "$1" ]; do
             shift
         ;;
         --port)
-            SERVER_PORT=$2
+            LOCAL_PORT=$2
             shift
         ;;
     esac
     shift
 done
 
+SERVER_PORT=$LOCAL_PORT
 
 mkdir -p target
 rm $PORT_FILE 2&>1 > /dev/null || true
@@ -47,11 +48,11 @@ echo -n $SERVER_PORT > $PORT_FILE
 echo -n $SERVER_IP_ADDR > $IP_ADDR_FILE
 
 echo "Server available at: $SERVER_IP_ADDR:$SERVER_PORT (${DOMAIN:-local})"
-echo "Listening on local port $SERVER_PORT..."
+echo "Listening on local port $LOCAL_PORT..."
 while [ true ]
 do
     
     echo "===== START TCP INPUT ====="
-    nc -l 0.0.0.0 $SERVER_PORT
+    nc -l 0.0.0.0 $LOCAL_PORT
     echo "===== CONNECTION CLOSED ====="
 done
